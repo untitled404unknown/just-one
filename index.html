@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en" data-static="1">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Just One</title>
+
+<!-- PWA / "Add to Home Screen" -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f6f66">
+
+<!-- iOS home-screen app icon + standalone-app behavior -->
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Just One">
+
+<!-- browser tab favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<style>
+  :root{
+    --paper:#f6f3ec;
+    --paper-raised:#ffffff;
+    --ink:#26231d;
+    --ink-soft:#6b6558;
+    --line:#ddd6c6;
+    --teal:#1f6f66;
+    --teal-ink:#0f4b44;
+    --amber:#b6702a;
+    --amber-bg:#f3e2cd;
+    --danger:#a33e3e;
+    --brand-blue:#5b9bd5;
+    --brand-red:#d5715b;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1c1a16;
+      --paper-raised:#26241e;
+      --ink:#efe9db;
+      --ink-soft:#a89f8c;
+      --line:#3c382e;
+      --teal:#5fbdaf;
+      --teal-ink:#8fd6ca;
+      --amber:#e0a55a;
+      --amber-bg:#3a2e1c;
+      --danger:#e08787;
+      --brand-blue:#7fb3e0;
+      --brand-red:#e0917f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1c1a16;
+    --paper-raised:#26241e;
+    --ink:#efe9db;
+    --ink-soft:#a89f8c;
+    --line:#3c382e;
+    --teal:#5fbdaf;
+    --teal-ink:#8fd6ca;
+    --amber:#e0a55a;
+    --amber-bg:#3a2e1c;
+    --danger:#e08787;
+    --brand-blue:#7fb3e0;
+    --brand-red:#e0917f;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    padding-inline:18px;
+    padding-block:20px;
+    min-height:100%;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .app{
+    width:100%;
+    max-width:480px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    flex:1;
+  }
+
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif; text-wrap:balance; margin:0;}
+
+  .topbar{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .topbar h1{font-size:1.5rem; font-weight:600; letter-spacing:-0.01em;}
+  .topbar h1 .word-blue{color:var(--brand-blue);}
+  .topbar h1 .word-red{color:var(--brand-red);}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.68rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .sync-dot{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.68rem;
+    color:var(--ink-soft);
+  }
+  .sync-dot .led{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent);
+  }
+  .sync-dot.offline .led{background:var(--danger); box-shadow:0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);}
+
+  .topbar-right{display:flex; align-items:center; gap:10px;}
+  .theme-toggle{
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    color:var(--ink);
+    width:30px; height:30px;
+    border-radius:999px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.9rem;
+    line-height:1;
+    padding:0;
+    flex-shrink:0;
+  }
+  .theme-toggle:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+
+  nav.tabs{
+    display:flex;
+    gap:6px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:4px;
+  }
+  nav.tabs button{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.85rem;
+    font-weight:600;
+    padding:9px 10px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  nav.tabs button.active{
+    background:var(--teal);
+    color:#fff;
+  }
+  nav.tabs button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+
+  section{display:none; flex-direction:column; gap:16px; flex:1;}
+  section.active{display:flex;}
+
+  /* --- Active set banner (Draw + Edit tabs) --- */
+  .active-set-banner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--amber-bg);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  .active-set-banner .set-name{
+    font-family:'Fraunces',Georgia,serif;
+    font-weight:600;
+    font-size:0.95rem;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .active-set-banner button{
+    flex-shrink:0;
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.78rem;
+    font-weight:600;
+    padding:6px 10px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+
+  /* --- Draw tab --- */
+  .draw-meta{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .draw-meta .count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.75rem;
+    color:var(--ink-soft);
+  }
+  .cardgrid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .term-card{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px 18px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    animation:rise .35s ease both;
+  }
+  .term-card .idx{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.75rem;
+    color:var(--ink-soft);
+    min-width:1.4em;
+  }
+  .term-card .word{
+    font-family:'Fraunces',Georgia,serif;
+    font-size:1.15rem;
+    font-weight:500;
+    flex:1;
+  }
+  .tag-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--teal);
+    flex-shrink:0;
+  }
+  .term-card.advanced .tag-dot{background:var(--amber);}
+
+  @keyframes rise{
+    from{opacity:0; transform:translateY(6px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .btn-row{
+    margin-top:auto;
+    display:flex;
+    gap:10px;
+  }
+  .draw-btn, .present-btn{
+    flex:1;
+    border:none;
+    color:#fff;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    padding:15px;
+    border-radius:14px;
+    cursor:pointer;
+    transition:transform .1s ease, background .15s ease;
+  }
+  .draw-btn{background:var(--teal);}
+  .present-btn{background:var(--amber); color:#1c1a16;}
+  .draw-btn:active, .present-btn:active{transform:scale(0.98);}
+  .draw-btn:focus-visible, .present-btn:focus-visible{outline:2px solid var(--teal-ink); outline-offset:2px;}
+  .draw-btn:disabled, .present-btn:disabled{background:var(--line); color:var(--ink-soft); cursor:not-allowed;}
+
+  .empty-note{
+    color:var(--ink-soft);
+    font-size:0.9rem;
+    background:var(--paper-raised);
+    border:1px dashed var(--line);
+    border-radius:12px;
+    padding:16px;
+    text-align:center;
+  }
+
+  /* --- Edit tab --- */
+  .edit-toolbar{
+    display:flex;
+    gap:8px;
+  }
+  .edit-toolbar input[type="text"]{
+    flex:1;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.95rem;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--paper-raised);
+    color:var(--ink);
+  }
+  .edit-toolbar input[type="text"]:focus-visible{outline:2px solid var(--teal); outline-offset:1px;}
+  .edit-toolbar button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:700;
+    font-size:0.9rem;
+    border:none;
+    background:var(--teal);
+    color:#fff;
+    padding:0 16px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+  .edit-toolbar button:disabled{background:var(--line); color:var(--ink-soft);}
+
+  .list-scroll{
+    flex:1;
+    max-height:60vh;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding-right:2px;
+  }
+  .list-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:9px 10px 9px 12px;
+  }
+  .list-row .word{flex:1; font-size:0.92rem;}
+  .list-row button{
+    border:none;
+    background:transparent;
+    color:var(--danger);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    cursor:pointer;
+    padding:6px 8px;
+    border-radius:6px;
+  }
+  .list-row button:hover{background:color-mix(in srgb, var(--danger) 12%, transparent);}
+  .list-row button:focus-visible{outline:2px solid var(--danger);}
+
+  .edit-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .edit-footer button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.8rem;
+    font-weight:600;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    padding:7px 12px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .edit-footer button:hover{color:var(--danger); border-color:var(--danger);}
+
+  /* --- Sets tab --- */
+  .new-set-row{
+    display:flex;
+    gap:8px;
+  }
+  .new-set-row input[type="text"]{
+    flex:1;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.95rem;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--paper-raised);
+    color:var(--ink);
+  }
+  .new-set-row button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:700;
+    font-size:0.9rem;
+    border:none;
+    background:var(--teal);
+    color:#fff;
+    padding:0 16px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+  .set-list{
+    flex:1;
+    max-height:60vh;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding-right:2px;
+  }
+  .set-card{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .set-card.is-active{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset;}
+  .set-card-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .set-title{
+    font-family:'Fraunces',Georgia,serif;
+    font-weight:600;
+    font-size:1rem;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .set-count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    flex-shrink:0;
+  }
+  .active-pill{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.65rem;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    background:var(--teal);
+    color:#fff;
+    padding:3px 8px;
+    border-radius:999px;
+    flex-shrink:0;
+  }
+  .set-card-actions{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .set-card-actions button{
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.76rem;
+    font-weight:600;
+    padding:6px 10px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .set-card-actions button.use-btn{background:var(--teal); color:#fff; border-color:var(--teal);}
+  .set-card-actions button.use-btn:disabled{background:var(--line); color:var(--ink-soft); border-color:var(--line); cursor:default;}
+  .set-card-actions button.delete-btn:hover{color:var(--danger); border-color:var(--danger);}
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translate(-50%, 12px);
+    background:var(--ink);
+    color:var(--paper);
+    font-size:0.85rem;
+    padding:10px 16px;
+    border-radius:999px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    max-width:90vw;
+    text-align:center;
+    z-index:2000;
+  }
+  .toast.show{opacity:1; transform:translate(-50%, 0);}
+
+  /* --- Inline prompt modal (used for renaming sets) --- */
+  .modal-backdrop{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:3000;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal-card{
+    background:var(--paper-raised);
+    border-radius:14px;
+    padding:18px;
+    width:100%;
+    max-width:360px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .modal-card input[type="text"]{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.95rem;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .modal-actions{display:flex; justify-content:flex-end; gap:8px;}
+  .modal-actions button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:600;
+    font-size:0.85rem;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink);
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .modal-actions button.primary{background:var(--teal); color:#fff; border-color:var(--teal);}
+
+  /* --- Present mode --- */
+  .present-overlay{
+    position:fixed;
+    inset:0;
+    background:var(--paper);
+    color:var(--ink);
+    z-index:1000;
+    display:none;
+    flex-direction:column;
+    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+  }
+  .present-overlay.show{display:flex;}
+  .present-topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-shrink:0;
+  }
+  .present-topbar .set-name{
+    font-family:'Fraunces',Georgia,serif;
+    font-weight:600;
+    font-size:1.1rem;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .present-close{
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:600;
+    font-size:0.85rem;
+    padding:8px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .present-grid{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:clamp(10px, 3vmin, 28px);
+    overflow-y:auto;
+    padding:10px 0;
+  }
+  .present-word{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:clamp(10px, 1.6vmin, 18px);
+    padding:clamp(10px, 2.2vmin, 28px) clamp(14px, 3vmin, 36px);
+    font-family:'Fraunces',Georgia,serif;
+    font-weight:600;
+    font-size:clamp(1.8rem, 8.5vmin, 9rem);
+    text-align:left;
+    line-height:1.1;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:0.4em;
+  }
+  .present-word .tag-dot{width:0.5em; height:0.5em;}
+  .present-idx{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:500;
+    font-size:0.5em;
+    color:var(--ink-soft);
+    flex-shrink:0;
+  }
+  .present-draw-btn{
+    flex-shrink:0;
+    border:none;
+    background:var(--teal);
+    color:#fff;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    padding:16px;
+    border-radius:14px;
+    cursor:pointer;
+    margin-top:10px;
+  }
+  .present-draw-btn:disabled{background:var(--line); color:var(--ink-soft);}
+
+  /* --- Read-only shared copy (GitHub Pages): no adding, editing or deleting --- */
+  html[data-static="1"] .edit-toolbar,
+  html[data-static="1"] .edit-footer button,
+  html[data-static="1"] .new-set-row{display:none;}
+  .readonly-note{font-size:0.8rem; color:var(--ink-soft); text-align:center;}
+  .publish-note{font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--ink-soft); word-break:break-all;}
+  .publish-note.bad{color:var(--danger);}
+
+  @media (prefers-reduced-motion: reduce){
+    .term-card{animation:none;}
+    .draw-btn, .present-btn{transition:none;}
+  }
+</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Biology · Diabetes Research</div>
+      <h1><span class="word-blue">Just</span> <span class="word-red">Type</span> <span class="word-blue">One</span> <span class="word-red">Diabetes</span></h1>
+    </div>
+    <div class="topbar-right">
+      <span class="sync-dot" id="sync-dot"><span class="led"></span><span id="sync-label">synced</span></span>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">🌙</button>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button id="tab-study-btn" class="active" onclick="showTab('study')">Draw</button>
+    <button id="tab-edit-btn" onclick="showTab('edit')">Edit List</button>
+    <button id="tab-sets-btn" onclick="showTab('sets')">Sets</button>
+  </nav>
+
+  <section id="tab-study" class="active">
+    <div class="active-set-banner">
+      <span class="set-name" id="active-set-name-study">Loading…</span>
+      <button onclick="showTab('sets')">Switch set</button>
+    </div>
+    <div class="draw-meta">
+      <span class="eyebrow">5 random terms</span>
+      <span class="count" id="pool-count">0 in pool</span>
+    </div>
+    <div class="cardgrid" id="cardgrid"></div>
+    <div id="empty-note" class="empty-note" hidden>This set is empty. Add some terms in Edit List first.</div>
+    <div class="btn-row">
+      <button class="draw-btn" id="draw-btn" onclick="drawTerms()">Draw 5 new terms</button>
+      <button class="present-btn" id="present-btn" onclick="enterPresent()">Present</button>
+    </div>
+  </section>
+
+  <section id="tab-edit">
+    <div class="active-set-banner">
+      <span class="set-name" id="active-set-name-edit">Loading…</span>
+      <button onclick="showTab('sets')">Switch set</button>
+    </div>
+    <div class="edit-toolbar">
+      <input type="text" id="new-term" placeholder="Add a term, e.g. Gluconeogenesis" autocomplete="off" onkeydown="if(event.key==='Enter')addTerm()">
+      <button id="add-btn" onclick="addTerm()">Add</button>
+    </div>
+    <div class="list-scroll" id="list-scroll"></div>
+    <div class="edit-footer">
+      <span id="list-count">0 terms</span>
+      <button onclick="resetList()">Reset to starter list</button>
+    </div>
+  </section>
+
+  <section id="tab-sets">
+    <div class="new-set-row">
+      <input type="text" id="new-set-name" placeholder="New set name" autocomplete="off" onkeydown="if(event.key==='Enter')createBlankSet()">
+      <button onclick="createBlankSet()">Create</button>
+    </div>
+    <div class="set-list" id="set-list"></div>
+    <div class="readonly-note" id="readonly-note" hidden>These word lists are shared read-only. Your draws stay on this device.</div>
+    <div class="publish-note" id="publish-note" hidden></div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal-card">
+    <input type="text" id="modal-input">
+    <div class="modal-actions">
+      <button id="modal-cancel">Cancel</button>
+      <button class="primary" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="present-overlay" id="present-overlay">
+  <div class="present-topbar">
+    <span class="set-name" id="present-set-name">Set</span>
+    <button class="present-close" onclick="exitPresent()">Close</button>
+  </div>
+  <div class="present-grid" id="present-grid"></div>
+  <button class="present-draw-btn" id="present-draw-btn" onclick="drawTerms()">Draw 5 new terms</button>
+</div>
+
+<script>
+  // All state (sets, their term lists, and whatever's currently drawn) lives on the
+  // server in a single shared file, so every device sees the same sets and draws.
+  var sets = [];          // [{id, name, termCount}]
+  var activeSetId = null;
+  var terms = [];         // [{term, advanced}] — active set's full list
+  var currentDraw = [];   // [{term, advanced}] — active set's current draw
+  var activeTab = 'study';
+
+  // --- Read-only shared copy (GitHub Pages) ---
+  // It reads lists.json published by the owner's server. Nothing can be added, edited or
+  // deleted; draws and the chosen set are kept on this device only.
+  var STATIC = document.documentElement.getAttribute('data-static') === '1';
+  var published = null;               // {updated, sets:[{id, name, terms:[{term, advanced}]}]}
+  var LOCAL_KEY = 'justOne.local';     // {activeSetId, perSet:{id:{bag:[], currentDraw:[]}}}
+  if(STATIC){
+    document.getElementById('tab-edit-btn').textContent = 'Terms';
+    document.getElementById('readonly-note').hidden = false;
+    document.getElementById('empty-note').textContent = 'This set is empty.';
+    if('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+  function localGet(){ try{ return JSON.parse(localStorage.getItem(LOCAL_KEY)) || {}; }catch(e){ return {}; } }
+  function localSet(v){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(v)); }catch(e){} }
+  function norm(t){ return String(t).trim().toLowerCase(); }
+  function shuffled(arr){ var a = arr.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var x=a[i]; a[i]=a[j]; a[j]=x; } return a; }
+
+  // Same "shuffle bag" as the server: every term shows once before any repeats.
+  function localDraw(ps, pool, n){
+    var picks = [];
+    var count = Math.min(n, pool.length);
+    for(var i=0;i<count;i++){
+      if(!ps.bag.length){
+        var refill = pool.filter(function(t){ return !picks.some(function(p){ return norm(p) === norm(t); }); });
+        if(!refill.length) refill = pool.slice();
+        ps.bag = shuffled(refill);
+      }
+      picks.push(ps.bag.shift());
+    }
+    return picks;
+  }
+
+  // Build the same shape the server's /api/state returns, from lists.json + this device's draws
+  function staticState(){
+    var loc = localGet(); loc.perSet = loc.perSet || {};
+    var ids = published.sets.map(function(s){ return s.id; });
+    if(!loc.activeSetId || ids.indexOf(loc.activeSetId) < 0) loc.activeSetId = ids[0];
+    var set = published.sets.find(function(s){ return s.id === loc.activeSetId; });
+    var names = set.terms.map(function(t){ return t.term; });
+    var ps = loc.perSet[set.id] || {bag: [], currentDraw: []};
+    // the owner may have removed terms since the last visit
+    ps.bag = (ps.bag || []).filter(function(t){ return names.indexOf(t) >= 0; });
+    ps.currentDraw = (ps.currentDraw || []).filter(function(t){ return names.indexOf(t) >= 0; });
+    loc.perSet[set.id] = ps;
+    localSet(loc);
+    return {
+      sets: published.sets.map(function(s){ return {id: s.id, name: s.name, termCount: s.terms.length}; }),
+      activeSetId: set.id,
+      terms: set.terms,
+      currentDraw: ps.currentDraw.map(function(t){ return set.terms.find(function(x){ return x.term === t; }); })
+    };
+  }
+
+  function staticDraw(){
+    var loc = localGet();
+    var set = published.sets.find(function(s){ return s.id === loc.activeSetId; }) || published.sets[0];
+    var ps = (loc.perSet || {})[set.id] || {bag: [], currentDraw: []};
+    ps.currentDraw = localDraw(ps, set.terms.map(function(t){ return t.term; }), 5);
+    loc.perSet = loc.perSet || {}; loc.perSet[set.id] = ps; loc.activeSetId = set.id;
+    localSet(loc);
+    return staticState();
+  }
+
+  // --- Light/dark mode toggle ---
+  // No stored preference = follow the system (prefers-color-scheme), same as before this
+  // toggle existed. Clicking the button sets an explicit override, saved so it persists
+  // across visits; the CSS already has full light/dark var sets keyed off data-theme.
+  var THEME_KEY = 'justOne.theme';
+
+  function systemPrefersDark(){
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function currentEffectiveTheme(){
+    var stored = localStorage.getItem(THEME_KEY);
+    if(stored === 'light' || stored === 'dark') return stored;
+    return systemPrefersDark() ? 'dark' : 'light';
+  }
+
+  function applyTheme(){
+    var stored = localStorage.getItem(THEME_KEY);
+    if(stored === 'light' || stored === 'dark'){
+      document.documentElement.setAttribute('data-theme', stored);
+    }else{
+      document.documentElement.removeAttribute('data-theme'); // follow system
+    }
+    var btn = document.getElementById('theme-toggle');
+    // icon shows what you'll SWITCH TO, matching common convention (sun = tap for light, moon = tap for dark)
+    btn.textContent = currentEffectiveTheme() === 'dark' ? '☀️' : '🌙';
+  }
+
+  document.getElementById('theme-toggle').addEventListener('click', function(){
+    var next = currentEffectiveTheme() === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme();
+  });
+
+  if(window.matchMedia){
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){
+      if(!localStorage.getItem(THEME_KEY)) applyTheme(); // only matters while following system
+    });
+  }
+
+  applyTheme();
+
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._h);
+    showToast._h = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  function setSynced(ok){
+    var dot = document.getElementById('sync-dot');
+    var label = document.getElementById('sync-label');
+    dot.classList.toggle('offline', !ok);
+    if(STATIC){
+      var when = published && published.updated ? new Date(published.updated).toLocaleDateString('en-CA', {month:'short', day:'numeric'}) : '';
+      label.textContent = ok ? (when ? 'lists ' + when : 'lists') : 'offline';
+    }else{
+      label.textContent = ok ? 'synced' : 'offline';
+    }
+  }
+
+  async function api(path, options){
+    try{
+      var res = await fetch(path, options);
+      if(!res.ok){
+        var body = {};
+        try{ body = await res.json(); }catch(e){}
+        setSynced(true); // server responded, so we ARE connected; this is just an application error (e.g. duplicate)
+        var err = new Error(body.error || ('Request failed (' + res.status + ')'));
+        err.status = res.status;
+        throw err;
+      }
+      setSynced(true);
+      return await res.json();
+    }catch(e){
+      if(!('status' in e)) setSynced(false);
+      throw e;
+    }
+  }
+
+  function activeSetName(){
+    var s = sets.find(function(x){ return x.id === activeSetId; });
+    return s ? s.name : '';
+  }
+
+  function applyState(data){
+    sets = data.sets;
+    activeSetId = data.activeSetId;
+    terms = data.terms;
+    currentDraw = data.currentDraw;
+    var name = activeSetName();
+    document.getElementById('active-set-name-study').textContent = name;
+    document.getElementById('active-set-name-edit').textContent = name;
+    document.getElementById('present-set-name').textContent = name;
+    var note = document.getElementById('publish-note');
+    var p = data.publish;
+    note.hidden = !(p && p.enabled);
+    if(p && p.enabled){
+      note.classList.toggle('bad', !!p.error);
+      note.textContent = 'Shared copy: ' + p.url + ' · ' + (p.error ? p.error
+        : p.last ? 'published ' + new Date(p.last).toLocaleString('en-CA', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})
+        : 'up to date');
+    }
+  }
+
+  function showTab(name){
+    activeTab = name;
+    document.getElementById('tab-study').classList.toggle('active', name === 'study');
+    document.getElementById('tab-edit').classList.toggle('active', name === 'edit');
+    document.getElementById('tab-sets').classList.toggle('active', name === 'sets');
+    document.getElementById('tab-study-btn').classList.toggle('active', name === 'study');
+    document.getElementById('tab-edit-btn').classList.toggle('active', name === 'edit');
+    document.getElementById('tab-sets-btn').classList.toggle('active', name === 'sets');
+    if(name === 'edit') renderList();
+    if(name === 'sets') renderSets();
+  }
+
+  function sameDraw(a, b){
+    if(a.length !== b.length) return false;
+    for(var i=0;i<a.length;i++){
+      if(a[i].term !== b[i].term) return false;
+    }
+    return true;
+  }
+
+  async function fetchState(){
+    if(!STATIC) return api('/api/state');
+    try{
+      var res = await fetch('lists.json', {cache: 'no-store'});
+      if(!res.ok) throw new Error(res.status);
+      var j = await res.json();
+      if(!j.sets || !j.sets.length) throw new Error('no sets');
+      published = j;
+      setSynced(true);
+    }catch(e){
+      setSynced(false);
+      if(!published){
+        document.getElementById('empty-note').hidden = false;
+        document.getElementById('empty-note').textContent = "Couldn't load the word lists. Check your connection and try again.";
+        throw e;
+      }
+    }
+    return staticState();
+  }
+
+  async function loadState(){
+    try{
+      var data = await fetchState();
+      var drawChanged = !sameDraw(currentDraw, data.currentDraw);
+      var setChanged = data.activeSetId !== activeSetId;
+      applyState(data);
+      // Always refresh the pool count / button state (cheap, no animation), but only
+      // rebuild the card grid itself when the draw actually changed (or the active set
+      // switched) — otherwise a routine 5s poll would replay the rise-in animation.
+      updateMeta();
+      if(drawChanged || setChanged) renderGrid();
+      if(activeTab === 'edit') renderList();
+      if(activeTab === 'sets') renderSets();
+      if(isPresenting()) renderPresent();
+    }catch(e){
+      // Keep whatever was last rendered; just flag as offline (setSynced already handled inside api()).
+    }
+  }
+
+  async function drawTerms(){
+    var btn = document.getElementById('draw-btn');
+    var pbtn = document.getElementById('present-draw-btn');
+    btn.disabled = true;
+    if(pbtn) pbtn.disabled = true;
+    try{
+      var data = STATIC ? staticDraw() : await api('/api/draw', { method: 'POST' });
+      applyState(data);
+      renderCards();
+      if(isPresenting()) renderPresent();
+    }catch(e){
+      showToast(e.message || 'Could not draw new terms.');
+    }finally{
+      btn.disabled = terms.length === 0;
+      if(pbtn) pbtn.disabled = terms.length === 0;
+    }
+  }
+
+  function updateMeta(){
+    var emptyNote = document.getElementById('empty-note');
+    var drawBtn = document.getElementById('draw-btn');
+    var presentBtn = document.getElementById('present-btn');
+    var presentDrawBtn = document.getElementById('present-draw-btn');
+    document.getElementById('pool-count').textContent = terms.length + ' in pool';
+    var empty = terms.length === 0;
+    emptyNote.hidden = !empty;
+    drawBtn.disabled = empty;
+    presentBtn.disabled = empty;
+    presentDrawBtn.disabled = empty;
+  }
+
+  function renderCards(){
+    updateMeta();
+    renderGrid();
+  }
+
+  function renderGrid(){
+    var grid = document.getElementById('cardgrid');
+    grid.innerHTML = '';
+    if(terms.length === 0 || currentDraw.length === 0) return;
+    currentDraw.forEach(function(item, i){
+      var card = document.createElement('div');
+      card.className = 'term-card' + (item.advanced ? ' advanced' : '');
+      card.style.animationDelay = (i * 0.05) + 's';
+      var idx = document.createElement('span');
+      idx.className = 'idx';
+      idx.textContent = String(i + 1);
+      var dot = document.createElement('span');
+      dot.className = 'tag-dot';
+      var word = document.createElement('span');
+      word.className = 'word';
+      word.textContent = item.term;
+      card.appendChild(idx);
+      card.appendChild(dot);
+      card.appendChild(word);
+      grid.appendChild(card);
+    });
+  }
+
+  function renderList(){
+    var scroll = document.getElementById('list-scroll');
+    document.getElementById('list-count').textContent = terms.length + ' term' + (terms.length===1?'':'s');
+    if(terms.length === 0){
+      scroll.innerHTML = '<div class="empty-note">' + (STATIC ? 'This set has no terms yet.' : 'No terms yet. Add one above.') + '</div>';
+      return;
+    }
+    scroll.innerHTML = '';
+    terms.forEach(function(item){
+      var row = document.createElement('div');
+      row.className = 'list-row';
+      var span = document.createElement('span');
+      span.className = 'word';
+      span.textContent = item.term;
+      row.appendChild(span);
+      if(!STATIC){
+        var btn = document.createElement('button');
+        btn.textContent = 'Remove';
+        btn.addEventListener('click', function(){ removeTerm(item.term); });
+        row.appendChild(btn);
+      }
+      scroll.appendChild(row);
+    });
+  }
+
+  async function addTerm(){
+    var input = document.getElementById('new-term');
+    var addBtn = document.getElementById('add-btn');
+    var val = input.value.trim();
+    if(!val) return;
+    addBtn.disabled = true;
+    try{
+      var data = await api('/api/terms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ term: val })
+      });
+      applyState(data);
+      input.value = '';
+      renderList();
+      renderCards();
+      showToast('Added "' + val + '"');
+    }catch(e){
+      if(e.status === 409){
+        showToast('Already on this set');
+      }else{
+        showToast(e.message || 'Could not add term.');
+      }
+    }finally{
+      addBtn.disabled = false;
+    }
+  }
+
+  async function removeTerm(term){
+    try{
+      var data = await api('/api/terms/' + encodeURIComponent(term), { method: 'DELETE' });
+      applyState(data);
+      renderList();
+      renderCards();
+      showToast('Removed "' + term + '"');
+    }catch(e){
+      showToast(e.message || 'Could not remove term.');
+    }
+  }
+
+  async function resetList(){
+    if(!confirm('Reset this set back to the starter list? This removes any custom terms in this set for everyone.')) return;
+    try{
+      var data = await api('/api/reset', { method: 'POST' });
+      applyState(data);
+      renderList();
+      renderCards();
+      showToast('Reset to starter list');
+    }catch(e){
+      showToast(e.message || 'Could not reset list.');
+    }
+  }
+
+  // --- Sets tab ---
+
+  function renderSets(){
+    var list = document.getElementById('set-list');
+    list.innerHTML = '';
+    sets.forEach(function(s){
+      var isActive = s.id === activeSetId;
+
+      var card = document.createElement('div');
+      card.className = 'set-card' + (isActive ? ' is-active' : '');
+
+      var top = document.createElement('div');
+      top.className = 'set-card-top';
+
+      var title = document.createElement('span');
+      title.className = 'set-title';
+      title.textContent = s.name;
+      top.appendChild(title);
+
+      if(isActive){
+        var pill = document.createElement('span');
+        pill.className = 'active-pill';
+        pill.textContent = 'Active';
+        top.appendChild(pill);
+      }
+
+      var count = document.createElement('span');
+      count.className = 'set-count';
+      count.textContent = s.termCount + ' term' + (s.termCount === 1 ? '' : 's');
+      top.appendChild(count);
+
+      card.appendChild(top);
+
+      var actions = document.createElement('div');
+      actions.className = 'set-card-actions';
+
+      var useBtn = document.createElement('button');
+      useBtn.className = 'use-btn';
+      useBtn.textContent = isActive ? 'In use' : 'Use';
+      useBtn.disabled = isActive;
+      useBtn.addEventListener('click', function(){ useSet(s.id); });
+      actions.appendChild(useBtn);
+
+      if(STATIC){ card.appendChild(actions); list.appendChild(card); return; }
+
+      var renameBtn = document.createElement('button');
+      renameBtn.textContent = 'Rename';
+      renameBtn.addEventListener('click', function(){ renameSet(s.id, s.name); });
+      actions.appendChild(renameBtn);
+
+      var dupBtn = document.createElement('button');
+      dupBtn.textContent = 'Duplicate';
+      dupBtn.addEventListener('click', function(){ duplicateSet(s.id); });
+      actions.appendChild(dupBtn);
+
+      var delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', function(){ deleteSet(s.id, s.name); });
+      actions.appendChild(delBtn);
+
+      card.appendChild(actions);
+      list.appendChild(card);
+    });
+  }
+
+  async function createBlankSet(){
+    var input = document.getElementById('new-set-name');
+    var name = input.value.trim();
+    try{
+      var data = await api('/api/sets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+      });
+      applyState(data);
+      input.value = '';
+      renderSets();
+      renderCards();
+      showToast('Created "' + activeSetName() + '" and switched to it');
+    }catch(e){
+      showToast(e.message || 'Could not create set.');
+    }
+  }
+
+  async function useSet(id){
+    try{
+      var data;
+      if(STATIC){ var loc = localGet(); loc.activeSetId = id; localSet(loc); data = staticState(); }
+      else data = await api('/api/sets/' + encodeURIComponent(id) + '/activate', { method: 'POST' });
+      applyState(data);
+      renderSets();
+      renderCards();
+      showToast('Switched to "' + activeSetName() + '"');
+    }catch(e){
+      showToast(e.message || 'Could not switch sets.');
+    }
+  }
+
+  async function renameSet(id, currentName){
+    var name = await simpleInlinePrompt(currentName);
+    if(name === null) return;
+    name = name.trim();
+    if(!name) return;
+    try{
+      var data = await api('/api/sets/' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+      });
+      applyState(data);
+      renderSets();
+      showToast('Renamed set');
+    }catch(e){
+      showToast(e.message || 'Could not rename set.');
+    }
+  }
+
+  async function duplicateSet(id){
+    try{
+      var data = await api('/api/sets/' + encodeURIComponent(id) + '/duplicate', { method: 'POST' });
+      applyState(data);
+      renderSets();
+      showToast('Duplicated set');
+    }catch(e){
+      showToast(e.message || 'Could not duplicate set.');
+    }
+  }
+
+  async function deleteSet(id, name){
+    if(sets.length <= 1){
+      showToast('You need at least one set');
+      return;
+    }
+    if(!confirm('Delete "' + name + '"? This removes it for everyone.')) return;
+    try{
+      var data = await api('/api/sets/' + encodeURIComponent(id), { method: 'DELETE' });
+      applyState(data);
+      renderSets();
+      renderCards();
+      showToast('Deleted set');
+    }catch(e){
+      showToast(e.message || 'Could not delete set.');
+    }
+  }
+
+  // Custom inline prompt (replaces window.prompt, which returns null immediately in
+  // some sandboxed/embedded viewers). Resolves with the entered text, or null on cancel.
+  function simpleInlinePrompt(defaultValue){
+    var backdrop = document.getElementById('modal-backdrop');
+    var input = document.getElementById('modal-input');
+    var saveBtn = document.getElementById('modal-save');
+    var cancelBtn = document.getElementById('modal-cancel');
+    input.value = defaultValue || '';
+    backdrop.classList.add('show');
+    setTimeout(function(){ input.focus(); input.select(); }, 0);
+
+    return new Promise(function(resolve){
+      function cleanup(result){
+        backdrop.classList.remove('show');
+        saveBtn.removeEventListener('click', onSave);
+        cancelBtn.removeEventListener('click', onCancel);
+        input.removeEventListener('keydown', onKeydown);
+        resolve(result);
+      }
+      function onSave(){ cleanup(input.value); }
+      function onCancel(){ cleanup(null); }
+      function onKeydown(e){
+        if(e.key === 'Enter') onSave();
+        if(e.key === 'Escape') onCancel();
+      }
+      saveBtn.addEventListener('click', onSave);
+      cancelBtn.addEventListener('click', onCancel);
+      input.addEventListener('keydown', onKeydown);
+    });
+  }
+
+  // --- Present mode ---
+
+  function isPresenting(){
+    return document.getElementById('present-overlay').classList.contains('show');
+  }
+
+  function renderPresent(){
+    document.getElementById('present-set-name').textContent = activeSetName();
+    var grid = document.getElementById('present-grid');
+    grid.innerHTML = '';
+    if(currentDraw.length === 0){
+      var note = document.createElement('div');
+      note.className = 'empty-note';
+      note.textContent = terms.length === 0 ? 'This set is empty.' : 'Draw some terms to present.';
+      grid.appendChild(note);
+      return;
+    }
+    currentDraw.forEach(function(item, i){
+      var word = document.createElement('div');
+      word.className = 'present-word' + (item.advanced ? ' advanced' : '');
+      var idx = document.createElement('span');
+      idx.className = 'present-idx';
+      idx.textContent = (i + 1) + '.';
+      var dot = document.createElement('span');
+      dot.className = 'tag-dot';
+      dot.style.background = item.advanced ? 'var(--amber)' : 'var(--teal)';
+      var text = document.createElement('span');
+      text.textContent = item.term;
+      word.appendChild(idx);
+      word.appendChild(dot);
+      word.appendChild(text);
+      grid.appendChild(word);
+    });
+  }
+
+  async function enterPresent(){
+    if(terms.length === 0){
+      showToast('This set is empty.');
+      return;
+    }
+    var overlay = document.getElementById('present-overlay');
+    renderPresent();
+    overlay.classList.add('show');
+    document.getElementById('present-draw-btn').disabled = terms.length === 0;
+    try{
+      if(overlay.requestFullscreen) await overlay.requestFullscreen();
+    }catch(e){
+      // Fullscreen can be denied/unsupported (e.g. iOS Safari) — the overlay still shows, just not truly fullscreen.
+    }
+  }
+
+  function exitPresent(){
+    var overlay = document.getElementById('present-overlay');
+    overlay.classList.remove('show');
+    if(document.fullscreenElement){
+      document.exitFullscreen().catch(function(){});
+    }
+  }
+
+  document.addEventListener('fullscreenchange', function(){
+    if(!document.fullscreenElement && isPresenting()){
+      document.getElementById('present-overlay').classList.remove('show');
+    }
+  });
+
+  function escapeHtml(s){
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // Initial load, then poll so other devices' changes (adds/removes/draws/set switches) show up here too.
+  loadState();
+  setInterval(loadState, STATIC ? 60000 : 5000);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible') loadState();
+  });
+</script>
+</body>
+</html>
